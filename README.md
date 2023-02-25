@@ -1,6 +1,6 @@
 # lisdf-loaders
 
-[Demo Here!](https://zt-yang.github.io/lisdf-loader/javascript/example/bundle/simple.html)
+[Demo Here!](https://zt-yang.github.io/lisdf-loaders/javascript/example/bundle/simple.html)
 
 ## Installation
 
@@ -16,7 +16,7 @@ npm run build-examples
 
 Settings > Actions > General > Workflow permissions > select "Read and write permissions".
 
-Set up deploy key by following [this guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys#deploy-keys).
+Settings > Pages > Build and deployment > Source > select "Github Actions" > create "Deploy static content to Pages" workflow.
 
 # LICENSE
 
