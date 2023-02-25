@@ -17,7 +17,7 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import URDFLoader from '../../src/URDFLoader.js';
 
-let scene, camera, renderer, robot, controls;
+let scene, camera, renderer, robot, robot2, controls;
 
 init();
 render();
@@ -65,6 +65,11 @@ function init() {
         robot = result;
 
     });
+    loader.load('../../../urdf/T12/urdf/T12_flipped.URDF', result2 => {
+
+        robot2 = result2;
+
+    });
 
     // wait until all the geometry has loaded to add the model to the scene
     manager.onLoad = () => {
@@ -87,6 +92,26 @@ function init() {
 
         robot.position.y -= bb.min.y;
         scene.add(robot);
+
+        robot2.rotation.x = Math.PI / 2;
+        robot2.traverse(c => {
+            c.castShadow = true;
+        });
+        for (let i = 1; i <= 6; i++) {
+
+            robot2.joints[`HP${ i }`].setJointValue(MathUtils.degToRad(30));
+            robot2.joints[`KP${ i }`].setJointValue(MathUtils.degToRad(120));
+            robot2.joints[`AP${ i }`].setJointValue(MathUtils.degToRad(-60));
+
+        }
+        robot2.updateMatrixWorld(true);
+
+        const bb2 = new Box3();
+        bb2.setFromObject(robot2);
+
+        robot2.position.y -= bb2.min.y;
+        robot2.position.x += bb2.min.x;
+        scene.add(robot2);
 
     };
 
