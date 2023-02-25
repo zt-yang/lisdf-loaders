@@ -1,10 +1,22 @@
 # lisdf-loaders
 
-LISDF loading code in [Javascript for THREE.js](./javascript/).
+[Demo Here!](https://zt-yang.github.io/lisdf-loader/javascript/example/bundle/simple.html)
 
-[Demo Here!](https://zt-yang.github.io/lisdf-loaders/javascript/example/bundle/simple.html)
+## Installation
 
-![Example](./unity/Assets/docs/asset%20store/all-urdfs.png)
+To develop locally:
+
+```shell
+cd javascript
+npm install
+npm run build-examples
+```
+
+## Deploy
+
+Settings > Actions > General > Workflow permissions > select "Read and write permissions".
+
+Set up deploy key by following [this guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys#deploy-keys).
 
 # LICENSE
 
