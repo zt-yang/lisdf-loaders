@@ -213,7 +213,7 @@ class LISDFLoader {
             //     var hex = c.toString(16);
             //     return hex.length === 1 ? '0' + hex : hex;
             // }
-            var [r, g, b, a] = rgba;
+            var [r, g, b, _] = rgba;
             r = Math.round(r * 255).toString();
             g = Math.round(g * 255).toString();
             b = Math.round(b * 255).toString();
