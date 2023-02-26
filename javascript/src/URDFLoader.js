@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { URDFRobot, URDFJoint, URDFLink, URDFCollider, URDFVisual, URDFMimicJoint } from './URDFClasses.js';
 
 /*
@@ -658,9 +659,20 @@ class URDFLoader {
 
         } else if (/\.obj$/i.test(path)) {
 
-            // from index.js
-            const loader = new OBJLoader(manager);
-            loader.load(path, obj => done(obj));
+            const mtlPath = path.replace('.obj', '.mtl');
+            if (path.includes('pr2_description')) {
+                // from index.js
+                const loader = new OBJLoader(manager);
+                loader.load(path, obj => done(obj));
+            } else {
+                // https://github.com/mrdoob/three.js/blob/master/examples/webgl_loader_obj_mtl.html
+                // const loader2 = new MTLLoader(manager);
+                // loader2.load(mtl_path, mtl => done(mtl));
+                new MTLLoader(manager).load(mtlPath, function(materials) {
+                    new OBJLoader(manager).setMaterials(materials)
+                        .load(path, obj => done(obj));
+                });
+            }
 
         } else {
 

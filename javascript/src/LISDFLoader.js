@@ -179,14 +179,34 @@ class LISDFLoader {
             const poseArray = processPose(pose);
 
             const link = children.filter(c => c.nodeName.toLowerCase() === 'link').pop();
-            const collision = link.children[0];
-            const geometry = collision.children[0];
+            const visual = link.children[1];
+            const geometry = visual.children[0];
             const box = geometry.children[0];
             const size = box.children[0];
             const sizeArray = size.textContent.split(' ').map(parseFloat);
 
-            return [sizeArray, poseArray];
+            const material = visual.children[1];
+            const color = material.children[0];
+            const colorHex = color.textContent.split(' ').map(parseFloat);
+            const hex = rgbToHex(colorHex);
 
+            return [sizeArray, poseArray, hex];
+
+        }
+
+        function rgbToHex(rgba) {
+            // https://threejs.org/docs/#api/en/math/Color
+            function c2h(c) {
+                var hex = c.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }
+            var [r, g, b, a] = rgba;
+            r = Math.round(r * 255);
+            g = Math.round(g * 255);
+            b = Math.round(b * 255);
+            const color = new THREE.Color(`rgb(${r}, ${g}, ${b})`);
+            return color.getHex();
+            // return '0x' + c2h(r) + c2h(g) + c2h(b);
         }
 
         return processLisdf(content);

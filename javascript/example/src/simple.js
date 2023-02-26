@@ -12,7 +12,7 @@ import {
     AmbientLight,
     Box3,
     LoadingManager,
-    MathUtils,
+    MathUtils, MeshBasicMaterial,
 } from 'three';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -105,16 +105,16 @@ function init() {
     controls.target.y = 1;
     controls.update();
 
-    const geometry = new THREE.BoxGeometry(0.2, 0.2, 2);
+    const geometry = new THREE.BoxGeometry(0.02, 0.02, 2);
     const material = new THREE.MeshNormalMaterial();
     const mesh = new THREE.Mesh(geometry, material);
 
-    const geometry2 = new THREE.BoxGeometry(2, 0.2, 0.2);
+    const geometry2 = new THREE.BoxGeometry(2, 0.02, 0.02);
     const material2 = new THREE.MeshNormalMaterial();
     const mesh2 = new THREE.Mesh(geometry2, material2);
     const loaded = [
-        ['x-axis', mesh, [0, 0.1, 1, 0, 0, 0]],
-        ['y-axis', mesh2, [1, 0.1, 0, 0, 0, 0]],
+        ['x-axis', mesh, [0.01, -0.01, 1, 0, 0, 0]],
+        ['y-axis', mesh2, [1, -0.01, 0.01, 0, 0, 0]],
     ];
 
     // Load bodies
@@ -130,18 +130,18 @@ function init() {
     manager.onLoad = () => {
 
         for (const name in bodies) {
-            if (bodies[name].length === 3) {
+            if (typeof bodies[name][0] === 'string') {
                 const [uri, pose, scale] = bodies[name];
                 // console.log('loading include', name, uri);
                 loaderurdf.load(uri, result => {
                     result.scale.set(scale, scale, scale);
                     loaded.push([name, result, pose]);
                 });
-            } else if (bodies[name].length === 2) {
-                const [size, pose] = bodies[name];
+            } else {
+                const [size, pose, color] = bodies[name];
                 // console.log('loading model', name, size);
                 const geometry1 = new THREE.BoxGeometry(size[0], size[1], size[2]);
-                const material1 = new THREE.MeshNormalMaterial();
+                const material1 = new MeshBasicMaterial({ color: color });
                 const body = new THREE.Mesh(geometry1, material1);
                 loaded.push([name, body, pose]);
             }
@@ -156,6 +156,9 @@ function init() {
             const [name, body, pose] = record;
             console.log('setting', name, pose);
             setPose(body, pose);
+            body.traverse(c => {
+                c.castShadow = true;
+            });
             scene.add(body);
         });
     };
