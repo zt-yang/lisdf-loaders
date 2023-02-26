@@ -20,9 +20,9 @@ Settings > Pages > Build and deployment > Source > select "Github Actions" > cre
 
 ## TODO
 
-- [*] Load static `.lisdf` files
-  - [*] Support scale
-  - [*] Support MTL
+- [x] Load static `.lisdf` files
+  - [x] Support scale
+  - [x] Support MTL
 - [ ] Load animation `.json` files
 - [ ] Drag and drop `.lisdf` files
 - [ ] Drag and drop folder with `scene.lisdf` and `animation.json` files
