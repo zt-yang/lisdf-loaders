@@ -33,15 +33,7 @@ export default
 class LISDFLoader {
 
     constructor(manager) {
-
         this.manager = manager || THREE.DefaultLoadingManager;
-        this.loadMeshCb = this.defaultMeshLoader.bind(this);
-        this.parseVisual = true;
-        this.parseCollision = false;
-        this.packages = '';
-        this.workingPath = '';
-        this.fetchOptions = {};
-
     }
 
     /* Public API */
@@ -94,8 +86,8 @@ class LISDFLoader {
 
                 }
 
-                const models = this.parse(data);
-                onComplete(models);
+                const model = this.parse(data);
+                onComplete(model);
                 manager.itemEnd(lisdfPath);
 
             })
@@ -153,8 +145,6 @@ class LISDFLoader {
         // Process the <robot> node
         function processWorld(world) {
 
-            console.log(world);
-
             const worldNodes = [ ...world.children ];
             const includes = worldNodes.filter(c => c.nodeName.toLowerCase() === 'include');
             const models = worldNodes.filter(c => c.nodeName.toLowerCase() === 'model');
@@ -168,42 +158,15 @@ class LISDFLoader {
 
             });
 
-            // // Create the <joint> map
-            // models.forEach(j => {
-            //
-            //     const name = j.getAttribute('name');
-            //     bodyMap[name] = processModel(j);
-            //
-            // });
+            // Create the <joint> map
+            models.forEach(j => {
+
+                const name = j.getAttribute('name');
+                bodyMap[name] = processModel(j);
+
+            });
 
             return bodyMap;
-
-        }
-
-        // Process joint nodes and parent them
-        function processInclude(include) {
-
-            console.log(include);
-
-            const name = include.getAttribute('name');
-            var children = [ ...include.children ];
-            var scale = 1;
-            if (name !== 'pr20') {
-                scale = children.filter(c => c.nodeName.toLowerCase() === 'scale').pop().map(parseFloat);
-            }
-            const uri = resolvePath(children.filter(c => c.nodeName.toLowerCase() === 'uri').pop().textContent);
-            const pose = children.filter(c => c.nodeName.toLowerCase() === 'pose').pop();
-            const poseArray = pose.textContent.split(' ').map(parseFloat);
-
-            console.log(name, uri, scale, poseArray);
-
-            const loader = new URDFLoader(manager);
-            let body;
-            loader.load(uri, result => { body = result; });
-            console.log(body);
-            // body.scale.setScalar(scale);
-            setPose(body, poseArray);
-            return body;
 
         }
 
@@ -212,27 +175,42 @@ class LISDFLoader {
             return path.replace('../../assets/models/', '../../../kitchen-models/');
         }
 
-        function setPose(body, pose) {
-            body.position = new THREE.Vector3(pose[0], pose[1], pose[2]);
+        function processPose(pose) {
+            var poseArray = pose.textContent.split(' ').map(parseFloat);
+            poseArray = [poseArray[0], poseArray[2], poseArray[1], Math.PI / 2, poseArray[5], poseArray[4]];
+            return poseArray;
+        }
+
+        // Process joint nodes and parent them
+        function processInclude(include) {
+
+            const name = include.getAttribute('name');
+            var children = [ ...include.children ];
+            var scale = 1;
+            if (name !== 'pr20') {
+                scale = parseFloat(children.filter(c => c.nodeName.toLowerCase() === 'scale').pop().textContent);
+            }
+            var uri = resolvePath(children.filter(c => c.nodeName.toLowerCase() === 'uri').pop().textContent);
+            const pose = children.filter(c => c.nodeName.toLowerCase() === 'pose').pop();
+            const poseArray = processPose(pose);
+            return [uri, poseArray, scale];
+
         }
 
         function processModel(model) {
 
-            const pose = model.filter(c => c.nodeName.toLowerCase() === 'pose').pop();
-            const poseArray = pose.textContent.split(' ').map(parseFloat);
+            var children = [ ...model.children ];
+            const pose = children.filter(c => c.nodeName.toLowerCase() === 'pose').pop();
+            const poseArray = processPose(pose);
 
-            const link = model.filter(c => c.nodeName.toLowerCase() === 'link').pop();
-            const collision = link.filter(c => c.nodeName.toLowerCase() === 'collision').pop();
-            const geometry = collision.filter(c => c.nodeName.toLowerCase() === 'geometry').pop();
-            const box = geometry.filter(c => c.nodeName.toLowerCase() === 'box').pop();
-            const size = box.filter(c => c.nodeName.toLowerCase() === 'size').pop();
+            const link = children.filter(c => c.nodeName.toLowerCase() === 'link').pop();
+            const collision = link.children[0];
+            const geometry = collision.children[0];
+            const box = geometry.children[0];
+            const size = box.children[0];
             const sizeArray = size.textContent.split(' ').map(parseFloat);
 
-            const geom = new THREE.BoxGeometry(sizeArray[0], sizeArray[1], sizeArray[2]);
-            const material = new THREE.MeshNormalMaterial();
-            const body = new THREE.Mesh(geom, material);
-            setPose(body, poseArray);
-            return body;
+            return [sizeArray, poseArray];
 
         }
 

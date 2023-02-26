@@ -70,6 +70,7 @@ function init() {
         robot = result;
 
     });
+
     loader.load('../../../urdf/T12/urdf/T12_flipped.URDF', result2 => {
 
         robot2 = result2;

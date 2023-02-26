@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { URDFRobot, URDFJoint, URDFLink, URDFCollider, URDFVisual, URDFMimicJoint } from './URDFClasses.js';
-import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader.js";
-import {OBJLoader} from "three/examples/jsm/loaders/OBJLoader.js";
 
 /*
 Reference coordinate frames for THREE.js and ROS.
@@ -114,11 +114,12 @@ class URDFLoader {
             })
             .then(data => {
 
-                if (this.workingPath === '') {
-
-                    this.workingPath = workingPath;
-
-                }
+                // if (this.workingPath === '') {
+                //
+                //     this.workingPath = workingPath;
+                //
+                // }
+                this.workingPath = workingPath;
 
                 const model = this.parse(data);
                 onComplete(model);

@@ -17,11 +17,18 @@ import {
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import LISDFLoader from '../../src/LISDFLoader.js';
+import URDFLoader from '../../src/URDFLoader.js';
 
 let scene, camera, renderer, bodies, controls;
 
 init();
 render();
+
+function setPose(body, pose) {
+    body.updateMatrixWorld(true);
+    body.position.set(pose[0], pose[1], pose[2]);
+    body.rotation.set(pose[3], pose[4], pose[5], 'XYZ');
+}
 
 function init() {
 
@@ -58,31 +65,64 @@ function init() {
     controls.target.y = 1;
     controls.update();
 
-    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+    const geometry = new THREE.BoxGeometry(0.2, 0.2, 2);
     const material = new THREE.MeshNormalMaterial();
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Load robot
+    const geometry2 = new THREE.BoxGeometry(2, 0.2, 0.2);
+    const material2 = new THREE.MeshNormalMaterial();
+    const mesh2 = new THREE.Mesh(geometry2, material2);
+    const loaded = [
+        ['x-axis', mesh, [0, 0.1, 1, 0, 0, 0]],
+        ['y-axis', mesh2, [1, 0.1, 0, 0, 0, 0]],
+    ];
+
+    // Load bodies
     const manager = new LoadingManager();
+
     const loader = new LISDFLoader(manager);
     loader.load('../../../scenes/full-kitchen.lisdf', result => {
-
         bodies = result;
-
     });
 
-    // wait until all the geometry has loaded to add the model to the scene
+    const manager2 = new LoadingManager();
+    const loaderurdf = new URDFLoader(manager2);
     manager.onLoad = () => {
 
-        bodies.forEach(body => {
+        for (const name in bodies) {
+            if (bodies[name].length === 3) {
+                const [uri, pose, scale] = bodies[name];
+                console.log('loading include', name, uri);
+                // console.log('loading include', name, uri, pose, scale);
+                loaderurdf.load(uri, result => {
+                    result.scale.set(scale, scale, scale);
+                    loaded.push([name, result, pose]);
+                });
+            } else if (bodies[name].length === 2) {
+                const [size, pose] = bodies[name];
+                console.log('loading model', name, size);
+                const geometry1 = new THREE.BoxGeometry(size[0], size[1], size[2]);
+                const material1 = new THREE.MeshNormalMaterial();
+                const body = new THREE.Mesh(geometry1, material1);
+                loaded.push([name, body, pose]);
+            }
 
-            scene.add(body);
-            console.log('added body: ' + body.name);
-
-        });
-
-        scene.add(mesh);
+        }
     };
+
+    // wait until all the geometry has loaded to add the model to the scene
+    manager2.onLoad = () => {
+        console.log('loaded', loaded);
+        loaded.forEach(function(record) {
+            const [name, body, pose] = record;
+            console.log('setting', name, pose);
+            setPose(body, pose);
+            scene.add(body);
+        });
+    };
+
+    // scene.add(mesh);
+    // scene.add(mesh2);
 
     onResize();
     window.addEventListener('resize', onResize);
