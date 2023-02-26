@@ -227,8 +227,12 @@ class LISDFLoader {
             var children = [ ...model.children ];
             children.forEach(j => {
 
-                const name = j.getAttribute('name');
-                jointMap[name] = parseFloat(j.children[0].textContent);
+                var name = j.getAttribute('name');
+                var value = parseFloat(j.children[0].textContent);
+                if (name === 'y') {
+                    value = -value;
+                }
+                jointMap[name] = value;
 
             });
             return jointMap;
