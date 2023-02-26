@@ -23,6 +23,7 @@ Settings > Pages > Build and deployment > Source > select "Github Actions" > cre
 - [x] Load static `.lisdf` files
   - [x] Support scale
   - [x] Support MTL
+  - [ ] Inverted problem
 - [ ] Load animation `.json` files
 - [ ] Drag and drop `.lisdf` files
 - [ ] Drag and drop folder with `scene.lisdf` and `animation.json` files
