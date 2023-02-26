@@ -1,31 +1,4 @@
 import * as THREE from 'three';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
-import { URDFRobot, URDFJoint, URDFLink, URDFCollider, URDFVisual, URDFMimicJoint } from './URDFClasses.js';
-import URDFLoader from './URDFLoader.js';
-import { processTuple, applyRotation } from './URDFLoader.js';
-
-/*
-Reference coordinate frames for THREE.js and ROS.
-Both coordinate systems are right handed so the URDF is instantiated without
-frame transforms. The resulting model can be rotated to rectify the proper up,
-right, and forward directions
-
-THREE.js
-   Y
-   |
-   |
-   .-----X
- ／
-Z
-
-ROS URDf
-       Z
-       |   X
-       | ／
- Y-----.
-
-*/
 
 /* URDFLoader Class */
 // Loads and reads a URDF file into a THREEjs Object3D format
@@ -111,7 +84,6 @@ class LISDFLoader {
 
     parse(content) {
 
-        const manager = this.manager;
         const bodyMap = {};
 
         // Process the URDF text format
@@ -177,7 +149,10 @@ class LISDFLoader {
 
         function processPose(pose) {
             var poseArray = pose.textContent.split(' ').map(parseFloat);
-            poseArray = [poseArray[0], poseArray[2], poseArray[1], Math.PI / 2, poseArray[5], poseArray[4]];
+            if (poseArray[3] === 0) {
+                poseArray[3] -= Math.PI / 2;
+            }
+            poseArray = [poseArray[0], poseArray[2], poseArray[1], poseArray[3], poseArray[5], poseArray[4]];
             return poseArray;
         }
 

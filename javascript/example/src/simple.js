@@ -24,10 +24,50 @@ let scene, camera, renderer, bodies, controls;
 init();
 render();
 
+/*
+Reference coordinate frames for THREE.js and ROS.
+Both coordinate systems are right handed so the URDF is instantiated without
+frame transforms. The resulting model can be rotated to rectify the proper up,
+right, and forward directions
+
+THREE.js
+   Y
+   |
+   |
+   .-----X
+ ／
+Z
+
+ROS URDf
+       Z
+       |   X
+       | ／
+ Y-----.
+
+*/
+
+const tempQuaternion = new THREE.Quaternion();
+const tempEuler = new THREE.Euler();
+
+
+function applyRotation(obj, rpy, additive = false) {
+
+    // if additive is true the rotation is applied in
+    // addition to the existing rotation
+    if (!additive) obj.rotation.set(0, 0, 0);
+
+    tempEuler.set(rpy[0], rpy[1], rpy[2], 'ZYX');
+    tempQuaternion.setFromEuler(tempEuler);
+    tempQuaternion.multiply(obj.quaternion);
+    obj.quaternion.copy(tempQuaternion);
+
+}
+
 function setPose(body, pose) {
     body.updateMatrixWorld(true);
     body.position.set(pose[0], pose[1], pose[2]);
-    body.rotation.set(pose[3], pose[4], pose[5], 'XYZ');
+    applyRotation(body, [pose[3], pose[4], pose[5]]);
+    // body.rotation.set(pose[3], pose[4], pose[5], 'XYZ');
 }
 
 function init() {
@@ -92,15 +132,14 @@ function init() {
         for (const name in bodies) {
             if (bodies[name].length === 3) {
                 const [uri, pose, scale] = bodies[name];
-                console.log('loading include', name, uri);
-                // console.log('loading include', name, uri, pose, scale);
+                // console.log('loading include', name, uri);
                 loaderurdf.load(uri, result => {
                     result.scale.set(scale, scale, scale);
                     loaded.push([name, result, pose]);
                 });
             } else if (bodies[name].length === 2) {
                 const [size, pose] = bodies[name];
-                console.log('loading model', name, size);
+                // console.log('loading model', name, size);
                 const geometry1 = new THREE.BoxGeometry(size[0], size[1], size[2]);
                 const material1 = new THREE.MeshNormalMaterial();
                 const body = new THREE.Mesh(geometry1, material1);
