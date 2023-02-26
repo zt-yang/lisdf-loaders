@@ -209,15 +209,16 @@ class LISDFLoader {
 
         function rgbToHex(rgba) {
             // https://threejs.org/docs/#api/en/math/Color
-            function c2h(c) {
-                var hex = c.toString(16);
-                return hex.length === 1 ? '0' + hex : hex;
-            }
+            // function c2h(c) {
+            //     var hex = c.toString(16);
+            //     return hex.length === 1 ? '0' + hex : hex;
+            // }
             var [r, g, b, a] = rgba;
-            r = Math.round(r * 255);
-            g = Math.round(g * 255);
-            b = Math.round(b * 255);
-            const color = new THREE.Color(`rgb(${r}, ${g}, ${b})`);
+            r = Math.round(r * 255).toString();
+            g = Math.round(g * 255).toString();
+            b = Math.round(b * 255).toString();
+            const rgbString = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+            const color = new THREE.Color(rgbString);
             return color.getHex();
             // return '0x' + c2h(r) + c2h(g) + c2h(b);
         }
