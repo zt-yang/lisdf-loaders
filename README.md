@@ -18,6 +18,17 @@ Settings > Actions > General > Workflow permissions > select "Read and write per
 
 Settings > Pages > Build and deployment > Source > select "Github Actions" > create "Deploy static content to Pages" workflow.
 
+## TODO
+
+- [*] Load static `.lisdf` files
+  - [*] Support scale
+  - [*] Support MTL
+- [ ] Load animation `.json` files
+- [ ] Drag and drop `.lisdf` files
+- [ ] Drag and drop folder with `scene.lisdf` and `animation.json` files
+- [ ] Interactive scenes (joint positions)
+- [ ] Interactive scenes (menu choose scenes and problems)
+
 # LICENSE
 
 The software is available under the [Apache V2.0 license](./LICENSE).

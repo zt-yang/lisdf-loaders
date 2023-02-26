@@ -120,21 +120,34 @@ class LISDFLoader {
             const worldNodes = [ ...world.children ];
             const includes = worldNodes.filter(c => c.nodeName.toLowerCase() === 'include');
             const models = worldNodes.filter(c => c.nodeName.toLowerCase() === 'model');
-            // const state = worldNodes.filter(c => c.nodeName.toLowerCase() === 'state');
+            const state = worldNodes.filter(c => c.nodeName.toLowerCase() === 'state').pop();
+            const stateNodes = [ ...state.children ];
+            const states = stateNodes.filter(c => c.nodeName.toLowerCase() === 'model');
 
-            // Create the <include> map
+            // To load urdf files for the <include> nodes
             includes.forEach(m => {
 
                 const name = m.getAttribute('name');
                 bodyMap[name] = processInclude(m);
+                if (name === 'pr20') {
+                    bodyMap[name][2] = [0, 0, 0, -Math.PI / 2, 0, 0];
+                }
 
             });
 
-            // Create the <joint> map
-            models.forEach(j => {
+            // To create boxes for the <model> nodes
+            models.forEach(m => {
 
-                const name = j.getAttribute('name');
-                bodyMap[name] = processModel(j);
+                const name = m.getAttribute('name');
+                bodyMap[name] = processModel(m);
+
+            });
+
+            // Record intitial joint positions
+            states.forEach(m => {
+
+                const name = m.getAttribute('name');
+                bodyMap[name][3] = processJointState(m);
 
             });
 
@@ -156,7 +169,6 @@ class LISDFLoader {
             return poseArray;
         }
 
-        // Process joint nodes and parent them
         function processInclude(include) {
 
             const name = include.getAttribute('name');
@@ -168,7 +180,8 @@ class LISDFLoader {
             var uri = resolvePath(children.filter(c => c.nodeName.toLowerCase() === 'uri').pop().textContent);
             const pose = children.filter(c => c.nodeName.toLowerCase() === 'pose').pop();
             const poseArray = processPose(pose);
-            return [uri, poseArray, scale];
+            const positions = null;
+            return [uri, scale, poseArray, positions];
 
         }
 
@@ -207,6 +220,18 @@ class LISDFLoader {
             const color = new THREE.Color(`rgb(${r}, ${g}, ${b})`);
             return color.getHex();
             // return '0x' + c2h(r) + c2h(g) + c2h(b);
+        }
+
+        function processJointState(model) {
+            const jointMap = {};
+            var children = [ ...model.children ];
+            children.forEach(j => {
+
+                const name = j.getAttribute('name');
+                jointMap[name] = parseFloat(j.children[0].textContent);
+
+            });
+            return jointMap;
         }
 
         return processLisdf(content);

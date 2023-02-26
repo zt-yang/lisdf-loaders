@@ -11,7 +11,7 @@ import {
     Color,
     AmbientLight,
     LoadingManager,
-    MeshPhysicalMaterial
+    MeshPhysicalMaterial, MathUtils
 } from 'three';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -129,11 +129,11 @@ function init() {
 
         for (const name in bodies) {
             if (typeof bodies[name][0] === 'string') {
-                const [uri, pose, scale] = bodies[name];
+                const [uri, scale, pose, positions] = bodies[name];
                 // console.log('loading include', name, uri);
                 loaderurdf.load(uri, result => {
                     result.scale.set(scale, scale, scale);
-                    loaded.push([name, result, pose]);
+                    loaded.push([name, result, pose, positions]);
                 });
             } else {
                 const [size, pose, color] = bodies[name];
@@ -141,7 +141,7 @@ function init() {
                 const geometry1 = new THREE.BoxGeometry(size[0], size[1], size[2]);
                 const material1 = new MeshPhysicalMaterial({ color: color });
                 const body = new THREE.Mesh(geometry1, material1);
-                loaded.push([name, body, pose]);
+                loaded.push([name, body, pose, null]);
             }
 
         }
@@ -151,12 +151,19 @@ function init() {
     manager2.onLoad = () => {
         console.log('loaded', loaded);
         loaded.forEach(function(record) {
-            const [name, body, pose] = record;
+            const [name, body, pose, positions] = record;
             console.log('setting', name, pose);
             setPose(body, pose);
             body.traverse(c => {
                 c.castShadow = true;
             });
+            if (positions) {
+
+                for (const k in positions) {
+                    body.joints[k].setJointValue(positions[k]);
+                }
+
+            }
             scene.add(body);
         });
     };
