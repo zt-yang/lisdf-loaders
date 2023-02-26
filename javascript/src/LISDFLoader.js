@@ -157,7 +157,8 @@ class LISDFLoader {
 
         // Resolves the path of urdf files
         function resolvePath(path) {
-            return path.replace('../../assets/models/', '../../../kitchen-models/');
+            // return path.replace('../../assets/models/', '../../../kitchen-models/');
+            return path.replace('../../assets/models/', 'https://zt-yang.github.io/kitchen-models/');
         }
 
         function processPose(pose) {
