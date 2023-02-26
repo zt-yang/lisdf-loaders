@@ -2,6 +2,8 @@
 
 [Demo Here!](https://zt-yang.github.io/lisdf-loaders/javascript/example/bundle/simple.html)
 
+![Example simple.html](media/static.png)
+
 ## Installation
 
 To develop locally:
