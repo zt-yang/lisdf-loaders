@@ -10,9 +10,8 @@ import {
     sRGBEncoding,
     Color,
     AmbientLight,
-    Box3,
     LoadingManager,
-    MathUtils, MeshBasicMaterial,
+    MeshPhysicalMaterial
 } from 'three';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -48,7 +47,6 @@ ROS URDf
 
 const tempQuaternion = new THREE.Quaternion();
 const tempEuler = new THREE.Euler();
-
 
 function applyRotation(obj, rpy, additive = false) {
 
@@ -141,7 +139,7 @@ function init() {
                 const [size, pose, color] = bodies[name];
                 // console.log('loading model', name, size);
                 const geometry1 = new THREE.BoxGeometry(size[0], size[1], size[2]);
-                const material1 = new MeshBasicMaterial({ color: color });
+                const material1 = new MeshPhysicalMaterial({ color: color });
                 const body = new THREE.Mesh(geometry1, material1);
                 loaded.push([name, body, pose]);
             }
