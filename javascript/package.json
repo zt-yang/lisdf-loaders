@@ -1,7 +1,7 @@
 {
-  "name": "urdf-loader",
-  "version": "0.10.2",
-  "description": "URDF Loader for THREE.js and webcomponent viewer",
+  "name": "lisdf-loader",
+  "version": "0.0.1",
+  "description": "LISDF Loader for kitchen-world applications",
   "main": "src/URDFLoader.js",
   "type": "module",
   "scripts": {
@@ -19,12 +19,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gkjohnson/urdf-loaders.git"
+    "url": "git+https://github.com/zt-yang/lisdf-loaders.git"
   },
   "bugs": {
-    "url": "https://github.com/gkjohnson/urdf-loaders/issues"
+    "url": "https://github.com/zt-yang/lisdf-loadersissues"
   },
-  "homepage": "https://github.com/gkjohnson/urdf-loaders#readme",
+  "homepage": "https://github.com/zt-yang/lisdf-loaders#readme",
   "keywords": [
     "javascript",
     "threejs",

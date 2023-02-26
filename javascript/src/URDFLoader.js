@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { URDFRobot, URDFJoint, URDFLink, URDFCollider, URDFVisual, URDFMimicJoint } from './URDFClasses.js';
+import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader.js";
+import {OBJLoader} from "three/examples/jsm/loaders/OBJLoader.js";
 
 /*
 Reference coordinate frames for THREE.js and ROS.
@@ -652,6 +654,12 @@ class URDFLoader {
 
             const loader = new ColladaLoader(manager);
             loader.load(path, dae => done(dae.scene));
+
+        } else if (/\.obj$/i.test(path)) {
+
+            // from index.js
+            const loader = new OBJLoader(manager);
+            loader.load(path, obj => done(obj));
 
         } else {
 
