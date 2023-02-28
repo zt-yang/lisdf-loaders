@@ -156,11 +156,17 @@ input:focus {
     cursor: pointer;
     opacity: 0.5;
     font-size: 20px;
-    font-weight: 100;
+    /*font-weight: 100;*/
 }
 
 #lisdf-options li:hover {
-    opacity: 0.75;
+    /*opacity: 0.75; !* TODO: hide the panel for now *!*/
+}
+
+#note {
+    padding-top: 10px;
+    font-size: 12px;
+    font-weight: normal;
 }
 
 #controls {
@@ -182,7 +188,7 @@ input:focus {
     margin-bottom: 10px;
     text-align: right;
     transition: 0.1s opacity linear;
-    border-top: 1px solid white;
+    /*border-top: 1px solid white;*/ /* TODO: hide the panel for now */
 }
 
 #controls #toggle-controls:hover {
@@ -199,6 +205,7 @@ input:focus {
 /* hidden state */
 #controls.hidden #toggle-controls:before {
     content: "show controls";
+    display: none; /* TODO: hide the panel for now */
 }
 
 

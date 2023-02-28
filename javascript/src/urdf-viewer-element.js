@@ -45,7 +45,7 @@ class URDFViewer extends HTMLElement {
     get autoRedraw() { return this.hasAttribute('auto-redraw') || false; }
     set autoRedraw(val) { val ? this.setAttribute('auto-redraw', true) : this.removeAttribute('auto-redraw'); }
 
-    get noAutoRecenter() { return this.hasAttribute('no-auto-recenter') || false; }
+    get noAutoRecenter() { return this.hasAttribute('no-auto-recenter') || true; }
     set noAutoRecenter(val) { val ? this.setAttribute('no-auto-recenter', true) : this.removeAttribute('no-auto-recenter'); }
 
     get showCollision() { return this.hasAttribute('show-collision') || false; }

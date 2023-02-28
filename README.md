@@ -33,8 +33,8 @@ Settings > Pages > Build and deployment > Source > select "Github Actions" > cre
   - [x] Support MTL
   - [x] Fix axes problem
 - [x] Load animation `.json` files
-  - [ ] Object rotation problem
-- [ ] Embed static scenes into websites
+  - [x] Object rotation problem
+- [x] Embed static scenes into websites
 - [ ] Drag and drop `.lisdf` files
 - [ ] Drag and drop folder with `scene.lisdf` and `animation.json` files
 - [ ] Interactive scenes (joint positions)
