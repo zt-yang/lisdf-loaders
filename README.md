@@ -14,6 +14,12 @@ npm install
 npm run build-examples
 ```
 
+To use await when playing animation:
+
+```shell
+npm install --save regenerator-runtime
+```
+
 ## Deploy
 
 Settings > Actions > General > Workflow permissions > select "Read and write permissions".
@@ -25,8 +31,8 @@ Settings > Pages > Build and deployment > Source > select "Github Actions" > cre
 - [x] Load static `.lisdf` files
   - [x] Support scale
   - [x] Support MTL
-  - [ ] Inverted problem
-- [ ] Load animation `.json` files
+  - [x] Fix axes problem
+- [x] Load animation `.json` files
 - [ ] Drag and drop `.lisdf` files
 - [ ] Drag and drop folder with `scene.lisdf` and `animation.json` files
 - [ ] Interactive scenes (joint positions)
