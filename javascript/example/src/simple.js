@@ -59,7 +59,7 @@ function init() {
     controls.target.y = 1;
     controls.update();
 
-    const geometry = new THREE.BoxGeometry(0.02, 0.02, 2);
+    const geometry = new THREE.BoxGeometry(0.02, 0.02, 4);
     const material = new THREE.MeshNormalMaterial();
     const mesh = new THREE.Mesh(geometry, material);
 
@@ -67,7 +67,7 @@ function init() {
     const material2 = new THREE.MeshNormalMaterial();
     const mesh2 = new THREE.Mesh(geometry2, material2);
     const loaded = [
-        ['x-axis', mesh, [0.01, -0.01, 1, 0, 0, 0]],
+        ['x-axis', mesh, [0.01, -0.01, 2, 0, 0, 0]],
         ['y-axis', mesh2, [1, -0.01, 0.01, 0, 0, 0]],
     ];
 
