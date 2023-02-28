@@ -1,11 +1,8 @@
 /* globals */
 import * as THREE from 'three';
 import { registerDragEvents } from './dragAndDrop.js';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import LISDFManipulator from '../../src/lisdf-manipulator-element.js';
+import {setPose, processRobotPositions, processPose} from '../../src/LISDFUtils.js';
 
 customElements.define('lisdf-viewer', LISDFManipulator);
 
@@ -303,15 +300,52 @@ const updateList = () => {
 
 updateList();
 
+async function updateAnimation() {
+
+    if (viewer.jsonPath === null) return;
+    const response = await fetch(viewer.jsonPath);
+    const animation = await response.json();
+    var t = 0;
+
+    function runKeyFrame() {
+        const data = animation[t];
+        for (const name in data) {
+            const pose = data[name]['pose'];
+            const positions = data[name]['joint_state'];
+            if (name === 'pr20') {
+                viewer.models[name].setJointValues(processRobotPositions(positions));
+            } else {
+                setPose(viewer.models[name], processPose(pose));
+            }
+            // console.log(name, pose, positions);
+        }
+        t += 1;
+    }
+
+    function loopKeyFrame() {
+        if (animation.length === t) {
+            return;
+        }
+        runKeyFrame();
+        setTimeout(function() {
+            requestAnimationFrame(loopKeyFrame);
+            viewer.renderer.render(viewer.scene, viewer.camera);
+        }, 50);
+    }
+    loopKeyFrame();
+
+};
+
 document.addEventListener('WebComponentsReady', () => {
 
     animToggle.addEventListener('click', () => animToggle.classList.toggle('checked'));
 
     // stop the animation if user tried to manipulate the model
     viewer.addEventListener('manipulate-start', e => animToggle.classList.remove('checked'));
-    viewer.addEventListener('lisdf-processed', e => updateAngles());
-    updateLoop();
-    viewer.camera.position.set(12, 6, 6);
-    viewer.camera.lookAt(0, 0, 0);
+    viewer.addEventListener('lisdf-processed', e => updateAnimation());
+    // updateLoop();
+    // updateAnimation();
+    viewer.camera.position.set(-12, 6, 12);
+    viewer.camera.lookAt(0, 0, 6);
 
 });

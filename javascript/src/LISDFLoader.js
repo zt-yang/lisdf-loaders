@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { processPose, processRobotPositions } from './LISDFUtils.js';
 
 /* LISDFLoader Class */
 // Loads and reads a LISDF file into a THREEjs Object3D format
@@ -162,24 +163,6 @@ class LISDFLoader {
             return path.replace('../../assets/models/', 'https://zt-yang.github.io/kitchen-models/');
         }
 
-        function processPose(pose) {
-            // the axes in pybullet and here are different
-            var poseArray = pose.textContent.split(' ').map(parseFloat);
-            const inverted = true;
-
-            if (inverted) {
-                if (poseArray[3] === 0) {
-                    poseArray[3] -= Math.PI / 2;
-                }
-                poseArray = [poseArray[0], poseArray[2], poseArray[1], poseArray[3], poseArray[5], poseArray[4]];
-            } else {
-                poseArray[3] += Math.PI / 2;
-                poseArray = [-poseArray[0], poseArray[2], poseArray[1], poseArray[3], poseArray[5], poseArray[4]];
-            }
-
-            return poseArray;
-        }
-
         function processInclude(include) {
 
             const name = include.getAttribute('name');
@@ -190,7 +173,7 @@ class LISDFLoader {
             }
             var uri = resolvePath(children.filter(c => c.nodeName.toLowerCase() === 'uri').pop().textContent);
             const pose = children.filter(c => c.nodeName.toLowerCase() === 'pose').pop();
-            const poseArray = processPose(pose);
+            const poseArray = processPose(pose.textContent.split(' ').map(parseFloat));
             const positions = null;
             return [uri, scale, poseArray, positions];
 
@@ -200,7 +183,7 @@ class LISDFLoader {
 
             var children = [ ...model.children ];
             const pose = children.filter(c => c.nodeName.toLowerCase() === 'pose').pop();
-            const poseArray = processPose(pose);
+            const poseArray = processPose(pose.textContent.split(' ').map(parseFloat));
 
             const link = children.filter(c => c.nodeName.toLowerCase() === 'link').pop();
             const visual = link.children[1];
@@ -234,18 +217,15 @@ class LISDFLoader {
         }
 
         function processJointState(model) {
-            const jointMap = {};
             var children = [ ...model.children ];
+            var jointMap = {};
             children.forEach(j => {
-
-                var name = j.getAttribute('name');
-                var value = parseFloat(j.children[0].textContent);
-                if (name === 'y') {
-                    value = -value;
-                }
+                const name = j.getAttribute('name');
+                const value = parseFloat(j.children[0].textContent);
                 jointMap[name] = value;
 
             });
+            jointMap = processRobotPositions(jointMap);
             return jointMap;
         }
 

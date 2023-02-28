@@ -11,62 +11,18 @@ import {
     Color,
     AmbientLight,
     LoadingManager,
-    MeshPhysicalMaterial, MathUtils
+    MeshPhysicalMaterial,
 } from 'three';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import LISDFLoader from '../../src/LISDFLoader.js';
 import URDFLoader from '../../src/URDFLoader.js';
+import { setPose } from '../../src/LISDFUtils.js';
 
 let scene, camera, renderer, bodies, controls;
 
 init();
 render();
-
-/*
-Reference coordinate frames for THREE.js and ROS.
-Both coordinate systems are right handed so the URDF is instantiated without
-frame transforms. The resulting model can be rotated to rectify the proper up,
-right, and forward directions
-
-THREE.js
-   Y
-   |
-   |
-   .-----X
- ／
-Z
-
-ROS URDf
-       Z
-       |   X
-       | ／
- Y-----.
-
-*/
-
-const tempQuaternion = new THREE.Quaternion();
-const tempEuler = new THREE.Euler();
-
-function applyRotation(obj, rpy, additive = false) {
-
-    // if additive is true the rotation is applied in
-    // addition to the existing rotation
-    if (!additive) obj.rotation.set(0, 0, 0);
-
-    tempEuler.set(rpy[0], rpy[1], rpy[2], 'ZYX');
-    tempQuaternion.setFromEuler(tempEuler);
-    tempQuaternion.multiply(obj.quaternion);
-    obj.quaternion.copy(tempQuaternion);
-
-}
-
-function setPose(body, pose) {
-    body.updateMatrixWorld(true);
-    body.position.set(pose[0], pose[1], pose[2]);
-    applyRotation(body, [pose[3], pose[4], pose[5]]);
-    // body.rotation.set(pose[3], pose[4], pose[5], 'XYZ');
-}
 
 function init() {
 
@@ -74,8 +30,8 @@ function init() {
     scene.background = new Color(0x263238);
 
     camera = new PerspectiveCamera();
-    camera.position.set(12, 6, 6);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(-12, 6, 12);
+    camera.lookAt(0, 0, 6);
 
     renderer = new WebGLRenderer({ antialias: true });
     renderer.outputEncoding = sRGBEncoding;

@@ -3,51 +3,9 @@ import {LoadingManager, MeshPhongMaterial, MeshPhysicalMaterial} from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import LISDFLoader from './LISDFLoader.js';
 import URDFLoader from './URDFLoader.js';
-
-/*
-Reference coordinate frames for THREE.js and ROS.
-Both coordinate systems are right-handed so the URDF is instantiated without
-frame transforms. The resulting model can be rotated to rectify the proper up,
-right, and forward directions
-
-THREE.js
-   Y
-   |
-   |
-   .-----X
- ／
-Z
-
-ROS URDf
-       Z
-       |   X
-       | ／
- Y-----.
-
-*/
-
-const tempQuaternion = new THREE.Quaternion();
-const tempEuler = new THREE.Euler();
-
-function applyRotation(obj, rpy, additive = false) {
-
-    // if additive is true the rotation is applied in
-    // addition to the existing rotation
-    if (!additive) obj.rotation.set(0, 0, 0);
-
-    tempEuler.set(rpy[0], rpy[1], rpy[2], 'ZYX');
-    tempQuaternion.setFromEuler(tempEuler);
-    tempQuaternion.multiply(obj.quaternion);
-    obj.quaternion.copy(tempQuaternion);
-
-}
-
-function setPose(body, pose) {
-    body.updateMatrixWorld(true);
-    body.position.set(pose[0], pose[1], pose[2]);
-    applyRotation(body, [pose[3], pose[4], pose[5]]);
-    // body.rotation.set(pose[3], pose[4], pose[5], 'XYZ');
-}
+// import 'babel-polyfill'; // for async/await
+import 'regenerator-runtime/runtime'; // for async/await
+import {setPose, processRobotPositions, processPose} from './LISDFUtils.js';
 
 const tempVec2 = new THREE.Vector2();
 const emptyRaycast = () => {};
@@ -79,7 +37,7 @@ class LISDFViewer extends HTMLElement {
     get ignoreLimits() { return this.hasAttribute('ignore-limits') || false; }
     set ignoreLimits(val) { val ? this.setAttribute('ignore-limits', val) : this.removeAttribute('ignore-limits'); }
 
-    get displayShadow() { return this.hasAttribute('display-shadow') || false; }
+    get displayShadow() { return this.hasAttribute('display-shadow') || true; }
     set displayShadow(val) { val ? this.setAttribute('display-shadow', '') : this.removeAttribute('display-shadow'); }
 
     get ambientColor() { return this.getAttribute('ambient-color') || '#455A64'; }
@@ -136,6 +94,7 @@ class LISDFViewer extends HTMLElement {
         this.urlModifierFunc = null;
         this.animation = null;
         this.startTime = null;
+        this.jsonPath = null;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -165,7 +124,7 @@ class LISDFViewer extends HTMLElement {
         renderer.outputEncoding = THREE.sRGBEncoding;
 
         // Camera setup
-        const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
         camera.position.z = -10;
 
         // World setup
@@ -525,7 +484,7 @@ class LISDFViewer extends HTMLElement {
                 }
             };
 
-            const models = new Map();
+            const models = {};
             // wait until all the geometry has loaded to add the model to the scene
             manager2.onLoad = () => {
                 // If another request has come in to load a new
@@ -539,44 +498,63 @@ class LISDFViewer extends HTMLElement {
                 }
                 loaded.forEach(record => {
                     const [name, body, pose, positions] = record;
-                    console.log('setting', name, pose);
+                    // console.log('setting', name, pose);
                     setPose(body, pose);
                     body.traverse(c => {
                         c.castShadow = true;
                     });
                     if (positions) {
-
                         for (const k in positions) {
                             body.joints[k].setJointValue(positions[k]);
                         }
-
                     }
                     this.scene.add(body);
-                    models.put(name, body);
+                    models[name] = body;
                 });
 
                 this.models = models;
                 this.robot = models['pr20'];
                 this.world.add(this.robot);
-
-                // load animation json file
-                const jsonPath = 'https://zt-yang.github.io/lisdf-loaders/javascript/' + lisdf.replace('.lisdf', '.json').replace('../../../', '');
-                fetch(jsonPath)
-                    .then((response) => response.json())
-                    .then((json) => {
-                        this.animation = json;
-                        console.log('animation', json);
-                    });
                 this.startTime = Date.now() / 3e2;
+                // load animation json file
+                this.jsonPath = 'https://zt-yang.github.io/lisdf-loaders/' + lisdf.replace('.lisdf', '.json').replace('../../../', '');
 
-                this._setIgnoreLimits(this.ignoreLimits);
+                this._setIgnoreLimits(this.ignoreLimits || true);
                 this._updateCollisionVisibility();
 
                 this.dispatchEvent(new CustomEvent('lisdf-processed', { bubbles: true, cancelable: true, composed: true }));
                 this.dispatchEvent(new CustomEvent('geometry-loaded', { bubbles: true, cancelable: true, composed: true }));
 
                 this.recenter();
-                console.log(this.scene);
+
+                // const jsonPath = 'https://zt-yang.github.io/lisdf-loaders/' + lisdf.replace('.lisdf', '.json').replace('../../../', '');
+                // // Returns a Promise that resolves after "ms" Milliseconds
+                // const timer = ms => new Promise(res => setTimeout(res, ms));
+                // fetch(jsonPath)
+                //     .then((response) => response.json())
+                //     .then((json) => {
+                //         async function play(models, json) { // We need to wrap the loop into an async function for this to work
+                //             for (const frame in json) {
+                //                 const data = json[frame];
+                //                 for (const name in data) {
+                //                     const pose = data[name]['pose'];
+                //                     const positions = data[name]['joint_state'];
+                //                     if (name === 'pr20') {
+                //                         models[name].setJointValues(processRobotPositions(positions));
+                //                     } else {
+                //                         setPose(models[name], processPose(pose));
+                //                     }
+                //                     // console.log(name, pose, positions);
+                //                 }
+                //                 await timer(100); // then the created Promise can be awaited
+                //                 console.log();
+                //             }
+                //         }
+                //         this._setIgnoreLimits(true);
+                //         play(this.models, json);
+                //         this.animation = json;
+                //     });
+                // console.log('this.animation', this.animation);
             };
 
         }

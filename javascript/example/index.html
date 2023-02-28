@@ -9,14 +9,14 @@
         <script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.4.3/webcomponents-bundle.js"></script>
         <link href="https://fonts.googleapis.com/css?family=Roboto:100,300" rel="stylesheet"/>
         <link href="./styles.css" type="text/css" rel="stylesheet" />
-        <script src="./src/redirect.js" type="module"></script>
+        <script src="./src/redirect.js"></script>
     </head>
     <body tabindex="0">
 
         <div id="menu">
             <ul id="lisdf-options">
                 <li lisdf='../../../scenes/full-kitchen.lisdf' color="#E91E63">Full Kitchen</li>
-                <li lisdf='../../../scenes/simple-kitchen.lisdf' color="#009688">Simple Kitchen</li>
+<!--                <li lisdf='../../../scenes/simple-kitchen.lisdf' color="#009688">Simple Kitchen</li>-->
             </ul>
 
             <div id="controls" class="hidden">
@@ -32,6 +32,6 @@
         </div>
         <lisdf-viewer up="-Z" display-shadow tabindex="0"></lisdf-viewer>
 
-        <script src="./src/index.js" type="module"></script>
+        <script src="./src/index.js"></script>
     </body>
 </html>
