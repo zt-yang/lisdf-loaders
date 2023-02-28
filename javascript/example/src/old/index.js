@@ -5,19 +5,20 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import LISDFManipulator from '../../src/lisdf-manipulator-element.js';
+import URDFManipulator from '../../src/urdf-manipulator-element.js';
 
-customElements.define('lisdf-viewer', LISDFManipulator);
+customElements.define('urdf-viewer', URDFManipulator);
 
 // declare these globally for the sake of the example.
 // Hack to make the build work with webpack for now.
 // TODO: Remove this once modules or parcel is being used
-const viewer = document.querySelector('lisdf-viewer');
+const viewer = document.querySelector('urdf-viewer');
 
 const limitsToggle = document.getElementById('ignore-joint-limits');
 const collisionToggle = document.getElementById('collision-toggle');
 const radiansToggle = document.getElementById('radians-toggle');
 const autocenterToggle = document.getElementById('autocenter-toggle');
+const upSelect = document.getElementById('up-select');
 const sliderList = document.querySelector('#controls ul');
 const controlsel = document.getElementById('controls');
 const controlsToggle = document.getElementById('toggle-controls');
@@ -58,10 +59,12 @@ autocenterToggle.addEventListener('click', () => {
     viewer.noAutoRecenter = !autocenterToggle.classList.contains('checked');
 });
 
+upSelect.addEventListener('change', () => viewer.up = upSelect.value);
+
 controlsToggle.addEventListener('click', () => controlsel.classList.toggle('hidden'));
 
-// watch for lisdf changes
-viewer.addEventListener('lisdf-change', () => {
+// watch for urdf changes
+viewer.addEventListener('urdf-change', () => {
 
     Object
         .values(sliders)
@@ -119,7 +122,7 @@ viewer.addEventListener('manipulate-end', e => {
 });
 
 // create the sliders
-viewer.addEventListener('lisdf-processed', () => {
+viewer.addEventListener('urdf-processed', () => {
 
     const r = viewer.robot;
     Object
@@ -225,17 +228,66 @@ viewer.addEventListener('lisdf-processed', () => {
 
 document.addEventListener('WebComponentsReady', () => {
 
-    document.querySelector('li[lisdf]').dispatchEvent(new Event('click'));
+    viewer.loadMeshFunc = (path, manager, done) => {
+
+        const ext = path.split(/\./g).pop().toLowerCase();
+        switch (ext) {
+
+            case 'gltf':
+            case 'glb':
+                new GLTFLoader(manager).load(
+                    path,
+                    result => done(result.scene),
+                    null,
+                    err => done(null, err),
+                );
+                break;
+            case 'obj':
+                new OBJLoader(manager).load(
+                    path,
+                    result => done(result),
+                    null,
+                    err => done(null, err),
+                );
+                break;
+            case 'dae':
+                new ColladaLoader(manager).load(
+                    path,
+                    result => done(result.scene),
+                    null,
+                    err => done(null, err),
+                );
+                break;
+            case 'stl':
+                new STLLoader(manager).load(
+                    path,
+                    result => {
+                        const material = new THREE.MeshPhongMaterial();
+                        const mesh = new THREE.Mesh(result, material);
+                        done(mesh);
+                    },
+                    null,
+                    err => done(null, err),
+                );
+                break;
+
+        }
+
+    };
+
+    document.querySelector('li[urdf]').dispatchEvent(new Event('click'));
 
     if (/javascript\/example\/bundle/i.test(window.location)) {
-        viewer.package = '../../../scene';
+        viewer.package = '../../../urdf';
     }
+    console.log('viewer.package', viewer.package);
 
     registerDragEvents(viewer, () => {
         setColor('#263238');
         animToggle.classList.remove('checked');
         updateList();
     });
+    console.log('registerDragEvents', document.querySelector('li[urdf]'));
 
 });
 
@@ -244,10 +296,10 @@ const updateAngles = () => {
 
     if (!viewer.setJointValue) return;
 
-    // // reset everything to 0 first
-    // const resetJointValues = viewer.angles;
-    // for (const name in resetJointValues) resetJointValues[name] = 0;
-    // viewer.setJointValues(resetJointValues);
+    // reset everything to 0 first
+    const resetJointValues = viewer.angles;
+    for (const name in resetJointValues) resetJointValues[name] = 0;
+    viewer.setJointValues(resetJointValues);
 
     // animate the legs
     const time = Date.now() / 3e2;
@@ -266,15 +318,14 @@ const updateAngles = () => {
         viewer.setJointValue(`W${ i }`, window.performance.now() * 0.001);
 
     }
-    console.log('updatedAngles', time);
 
 };
 
 const updateLoop = () => {
 
-    // if (animToggle.classList.contains('checked')) {
-    //     updateAngles();
-    // }
+    if (animToggle.classList.contains('checked')) {
+        updateAngles();
+    }
 
     requestAnimationFrame(updateLoop);
 
@@ -282,16 +333,16 @@ const updateLoop = () => {
 
 const updateList = () => {
 
-    document.querySelectorAll('#lisdf-options li[lisdf]').forEach(el => {
+    document.querySelectorAll('#urdf-options li[urdf]').forEach(el => {
 
         el.addEventListener('click', e => {
 
-            const lisdf = e.target.getAttribute('lisdf');
+            const urdf = e.target.getAttribute('urdf');
             const color = e.target.getAttribute('color');
 
-            // viewer.up = '-Z';
-            // document.getElementById('up-select').value = viewer.up;
-            viewer.lisdf = lisdf;
+            viewer.up = '-Z';
+            document.getElementById('up-select').value = viewer.up;
+            viewer.urdf = urdf;
             animToggle.classList.add('checked');
             setColor(color);
 
@@ -309,9 +360,8 @@ document.addEventListener('WebComponentsReady', () => {
 
     // stop the animation if user tried to manipulate the model
     viewer.addEventListener('manipulate-start', e => animToggle.classList.remove('checked'));
-    viewer.addEventListener('lisdf-processed', e => updateAngles());
+    viewer.addEventListener('urdf-processed', e => updateAngles());
     updateLoop();
-    viewer.camera.position.set(12, 6, 6);
-    viewer.camera.lookAt(0, 0, 0);
+    viewer.camera.position.set(-5.5, 3.5, 5.5);
 
 });

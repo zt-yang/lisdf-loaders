@@ -268,7 +268,7 @@ class URDFMimicJoint extends URDFJoint {
     /* Overrides */
     setJointValue(...values) {
 
-        console.warn(`URDFMimicJoint: Setting the joint value of mimic joint "${ this.urdfName }" will cause it to be out of sync.`);
+        // console.warn(`URDFMimicJoint: Setting the joint value of mimic joint "${ this.urdfName }" will cause it to be out of sync.`);
         return super.setJointValue(...values);
     }
 

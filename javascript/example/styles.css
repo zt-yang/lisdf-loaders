@@ -1,4 +1,4 @@
-html, body, urdf-viewer {
+html, body, urdf-viewer, lisdf-viewer {
     padding: 0;
     margin: 0;
     height: 100%;
@@ -145,6 +145,21 @@ input:focus {
 }
 
 #urdf-options li:hover {
+    opacity: 0.75;
+}
+
+#lisdf-options {
+    text-overflow: ellipsis;
+}
+
+#lisdf-options li {
+    cursor: pointer;
+    opacity: 0.5;
+    font-size: 20px;
+    font-weight: 100;
+}
+
+#lisdf-options li:hover {
     opacity: 0.75;
 }
 

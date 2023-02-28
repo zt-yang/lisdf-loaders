@@ -157,26 +157,26 @@ export function registerDragEvents(viewer, callback) {
                 viewer.up = '+Z';
                 document.getElementById('up-select').value = viewer.up;
 
-                // filter all files ending in lisdf
-                const availableModels = fileNames.filter(n => /scenes$/i.test(n));
-                // remove existing entries from #lisdf-options
-                const lisdfOptionsContainer = document.querySelector('#lisdf-options');
-                while (lisdfOptionsContainer.firstChild) {
-                    lisdfOptionsContainer.removeChild(lisdfOptionsContainer.firstChild);
+                // filter all files ending in urdf
+                const availableModels = fileNames.filter(n => /urdf$/i.test(n));
+                // remove existing entries from #urdf-options
+                const urdfOptionsContainer = document.querySelector('#urdf-options');
+                while (urdfOptionsContainer.firstChild){
+                    urdfOptionsContainer.removeChild(urdfOptionsContainer.firstChild);
                 }
-                // create new entries in #lisdf-options
+                // create new entries in #urdf-options
                 availableModels.forEach(model => {
                     const li = document.createElement('li');
-                    li.setAttribute('lisdf', model);
+                    li.setAttribute('urdf', model);
                     li.setAttribute('color', '#263238');
                     // extract filename from full path
                     li.textContent = model.split(/[\\\/]/).pop();
-                    lisdfOptionsContainer.appendChild(li);
+                    urdfOptionsContainer.appendChild(li);
                 });
 
-                viewer.lisdf =
+                viewer.urdf =
                     filesNames
-                        .filter(n => /scenes$/i.test(n))
+                        .filter(n => /urdf$/i.test(n))
                         .shift();
 
             }).then(() => callback());

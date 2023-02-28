@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 
-/* URDFLoader Class */
-// Loads and reads a URDF file into a THREEjs Object3D format
+/* LISDFLoader Class */
+// Loads and reads a LISDF file into a THREEjs Object3D format
 export default
 class LISDFLoader {
 
     constructor(manager) {
         this.manager = manager || THREE.DefaultLoadingManager;
+        this.packages = ''; // TODO: find out if it's it's useful
     }
 
     /* Public API */
@@ -20,7 +21,7 @@ class LISDFLoader {
 
     }
 
-    // urdf:    The path to the URDF within the package OR absolute
+    // lisdf:    The path to the LISDF within the package OR absolute
     // onComplete:      Callback that is passed the model once loaded
     load(lisdf, onComplete, onProgress, onError) {
 
@@ -46,7 +47,7 @@ class LISDFLoader {
 
                 } else {
 
-                    throw new Error(`URDFLoader: Failed to load url '${ lisdfPath }' with error code ${ res.status } : ${ res.statusText }.`);
+                    throw new Error(`LISDFLoader: Failed to load url '${ lisdfPath }' with error code ${ res.status } : ${ res.statusText }.`);
 
                 }
 
@@ -72,7 +73,7 @@ class LISDFLoader {
 
                 } else {
 
-                    console.error('URDFLoader: Error loading file.', e);
+                    console.error('LISDFLoader: Error loading file.', e);
 
                 }
                 manager.itemError(lisdfPath);
@@ -86,7 +87,7 @@ class LISDFLoader {
 
         const bodyMap = {};
 
-        // Process the URDF text format
+        // Process the LISDF text format
         function processLisdf(data) {
 
             let children;
@@ -101,8 +102,8 @@ class LISDFLoader {
             } else {
 
                 const parser = new DOMParser();
-                const urdf = parser.parseFromString(data, 'text/xml');
-                children = [ ...urdf.children ];
+                const lisdf = parser.parseFromString(data, 'text/xml');
+                children = [ ...lisdf.children ];
 
             }
 
@@ -155,18 +156,27 @@ class LISDFLoader {
 
         }
 
-        // Resolves the path of urdf files
+        // Resolves the path of lisdf files
         function resolvePath(path) {
             // return path.replace('../../assets/models/', '../../../kitchen-models/');
             return path.replace('../../assets/models/', 'https://zt-yang.github.io/kitchen-models/');
         }
 
         function processPose(pose) {
+            // the axes in pybullet and here are different
             var poseArray = pose.textContent.split(' ').map(parseFloat);
-            if (poseArray[3] === 0) {
-                poseArray[3] -= Math.PI / 2;
+            const inverted = true;
+
+            if (inverted) {
+                if (poseArray[3] === 0) {
+                    poseArray[3] -= Math.PI / 2;
+                }
+                poseArray = [poseArray[0], poseArray[2], poseArray[1], poseArray[3], poseArray[5], poseArray[4]];
+            } else {
+                poseArray[3] += Math.PI / 2;
+                poseArray = [-poseArray[0], poseArray[2], poseArray[1], poseArray[3], poseArray[5], poseArray[4]];
             }
-            poseArray = [poseArray[0], poseArray[2], poseArray[1], poseArray[3], poseArray[5], poseArray[4]];
+
             return poseArray;
         }
 

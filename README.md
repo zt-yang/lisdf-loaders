@@ -30,6 +30,7 @@ Settings > Pages > Build and deployment > Source > select "Github Actions" > cre
 - [ ] Drag and drop `.lisdf` files
 - [ ] Drag and drop folder with `scene.lisdf` and `animation.json` files
 - [ ] Interactive scenes (joint positions)
+- [ ] Embed static scenes into websites
 - [ ] Interactive scenes (menu choose scenes and problems)
 
 # LICENSE

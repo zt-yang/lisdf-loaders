@@ -168,9 +168,6 @@ function init() {
         });
     };
 
-    // scene.add(mesh);
-    // scene.add(mesh2);
-
     onResize();
     window.addEventListener('resize', onResize);
 

@@ -1,40 +1,83 @@
 import * as THREE from 'three';
-import { MeshPhongMaterial } from 'three';
+import {LoadingManager, MeshPhongMaterial, MeshPhysicalMaterial} from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import LISDFLoader from './LISDFLoader.js';
 import URDFLoader from './URDFLoader.js';
+
+/*
+Reference coordinate frames for THREE.js and ROS.
+Both coordinate systems are right-handed so the URDF is instantiated without
+frame transforms. The resulting model can be rotated to rectify the proper up,
+right, and forward directions
+
+THREE.js
+   Y
+   |
+   |
+   .-----X
+ ／
+Z
+
+ROS URDf
+       Z
+       |   X
+       | ／
+ Y-----.
+
+*/
+
+const tempQuaternion = new THREE.Quaternion();
+const tempEuler = new THREE.Euler();
+
+function applyRotation(obj, rpy, additive = false) {
+
+    // if additive is true the rotation is applied in
+    // addition to the existing rotation
+    if (!additive) obj.rotation.set(0, 0, 0);
+
+    tempEuler.set(rpy[0], rpy[1], rpy[2], 'ZYX');
+    tempQuaternion.setFromEuler(tempEuler);
+    tempQuaternion.multiply(obj.quaternion);
+    obj.quaternion.copy(tempQuaternion);
+
+}
+
+function setPose(body, pose) {
+    body.updateMatrixWorld(true);
+    body.position.set(pose[0], pose[1], pose[2]);
+    applyRotation(body, [pose[3], pose[4], pose[5]]);
+    // body.rotation.set(pose[3], pose[4], pose[5], 'XYZ');
+}
 
 const tempVec2 = new THREE.Vector2();
 const emptyRaycast = () => {};
 
-// urdf-viewer element
-// Loads and displays a 3D view of a URDF-formatted robot
+// lisdf-viewer element
+// Loads and displays a 3D view of a LISDF-formatted scene
 
 // Events
-// urdf-change: Fires when the URDF has finished loading and getting processed
-// urdf-processed: Fires when the URDF has finished loading and getting processed
+// lisdf-change: Fires when the LISDF has finished loading and getting processed
+// lisdf-processed: Fires when the LISDF has finished loading and getting processed
 // geometry-loaded: Fires when all the geometry has been fully loaded
 // ignore-limits-change: Fires when the 'ignore-limits' attribute changes
 // angle-change: Fires when an angle changes
 export default
-class URDFViewer extends HTMLElement {
+class LISDFViewer extends HTMLElement {
 
     static get observedAttributes() {
-
-        return ['package', 'urdf', 'up', 'display-shadow', 'ambient-color', 'ignore-limits', 'show-collision'];
+        // 'up',
+        return ['package', 'lisdf', 'display-shadow', 'ambient-color', 'ignore-limits', 'show-collision'];
 
     }
 
     get package() { return this.getAttribute('package') || ''; }
     set package(val) { this.setAttribute('package', val); }
 
-    get urdf() { return this.getAttribute('urdf') || ''; }
-    set urdf(val) { this.setAttribute('urdf', val); }
+    get lisdf() { return this.getAttribute('lisdf') || ''; }
+    set lisdf(val) { this.setAttribute('lisdf', val); }
 
     get ignoreLimits() { return this.hasAttribute('ignore-limits') || false; }
     set ignoreLimits(val) { val ? this.setAttribute('ignore-limits', val) : this.removeAttribute('ignore-limits'); }
-
-    get up() { return this.getAttribute('up') || '+Z'; }
-    set up(val) { this.setAttribute('up', val); }
 
     get displayShadow() { return this.hasAttribute('display-shadow') || false; }
     set displayShadow(val) { val ? this.setAttribute('display-shadow', '') : this.removeAttribute('display-shadow'); }
@@ -62,9 +105,8 @@ class URDFViewer extends HTMLElement {
                 values[name] = joint.jointValue.length === 1 ? joint.angle : [...joint.jointValue];
 
             }
-
+            console.log('jointValues', values);
         }
-
         return values;
 
     }
@@ -90,8 +132,10 @@ class URDFViewer extends HTMLElement {
         this._dirty = false;
         this._loadScheduled = false;
         this.robot = null;
-        this.loadMeshFunc = null;
+        this.models = null;
         this.urlModifierFunc = null;
+        this.animation = null;
+        this.startTime = null;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -157,8 +201,6 @@ class URDFViewer extends HTMLElement {
         this.plane = plane;
         this.directionalLight = dirLight;
         this.ambientLight = ambientLight;
-
-        this._setUp(this.up);
 
         this._collisionMaterial = new MeshPhongMaterial({
             transparent: true,
@@ -249,16 +291,9 @@ class URDFViewer extends HTMLElement {
         switch (attr) {
 
             case 'package':
-            case 'urdf': {
+            case 'lisdf': {
 
                 this._scheduleLoad();
-                break;
-
-            }
-
-            case 'up': {
-
-                this._setUp(this.up);
                 break;
 
             }
@@ -317,14 +352,15 @@ class URDFViewer extends HTMLElement {
     }
 
     // Set the joint with jointName to
-    // angle in degrees
+    // angle in degrees  // TODO: change multiple joints
     setJointValue(jointName, ...values) {
 
         if (!this.robot) return;
+        if (!this.robot.joints) return;
         if (!this.robot.joints[jointName]) return;
 
         if (this.robot.joints[jointName].setJointValue(...values)) {
-
+            // console.log('setJointValue', jointName, values);
             this.redraw();
             this.dispatchEvent(new CustomEvent('angle-change', { bubbles: true, cancelable: true, detail: jointName }));
 
@@ -391,9 +427,8 @@ class URDFViewer extends HTMLElement {
 
         // if our current model is already what's being requested
         // or has been loaded then early out
-        if (this._prevload === `${ this.package }|${ this.urdf }`) return;
-        this._prevload = `${ this.package }|${ this.urdf }`;
-        console.log('_scheduleLoad', this._prevload);
+        if (this._prevload === `${ this.package }|${ this.lisdf }`) return;
+        this._prevload = `${ this.package }|${ this.lisdf }`;
 
         // if we're already waiting on a load then early out
         if (this._loadScheduled) return;
@@ -409,22 +444,21 @@ class URDFViewer extends HTMLElement {
 
         requestAnimationFrame(() => {
 
-            console.log('requestAnimationFrame', this.package, '//', this.urdf);
-            this._loadUrdf(this.package, this.urdf);
+            this._loadLisdf(this.package, this.lisdf);
             this._loadScheduled = false;
 
         });
-
     }
 
-    // Watch the package and urdf field and load the robot model.
+    // Watch the package and lisdf field and load the robot model.
     // This should _only_ be called from _scheduleLoad because that
     // ensures the that current robot has been removed
-    _loadUrdf(pkg, urdf) {
+    _loadLisdf(pkg, lisdf) {
+        console.log('loading lisdf', pkg, lisdf);
 
-        this.dispatchEvent(new CustomEvent('urdf-change', { bubbles: true, cancelable: true, composed: true }));
+        this.dispatchEvent(new CustomEvent('lisdf-change', { bubbles: true, cancelable: true, composed: true }));
 
-        if (urdf) {
+        if (lisdf) {
 
             // Keep track of this request and make
             // sure it doesn't get overwritten by
@@ -432,49 +466,8 @@ class URDFViewer extends HTMLElement {
             this._requestId++;
             const requestId = this._requestId;
 
-            const updateMaterials = mesh => {
-
-                mesh.traverse(c => {
-
-                    if (c.isMesh) {
-
-                        c.castShadow = true;
-                        c.receiveShadow = true;
-
-                        if (c.material) {
-
-                            const mats =
-                                (Array.isArray(c.material) ? c.material : [c.material])
-                                    .map(m => {
-
-                                        if (m instanceof THREE.MeshBasicMaterial) {
-
-                                            m = new THREE.MeshPhongMaterial();
-
-                                        }
-
-                                        if (m.map) {
-
-                                            m.map.encoding = THREE.GammaEncoding;
-
-                                        }
-
-                                        return m;
-
-                                    });
-                            c.material = mats.length === 1 ? mats[0] : mats;
-
-                        }
-
-                    }
-
-                });
-
-            };
-
             if (pkg.includes(':') && (pkg.split(':')[1].substring(0, 2)) !== '//') {
                 // E.g. pkg = "pkg_name: path/to/pkg_name, pk2: path2/to/pk2"}
-
                 // Convert pkg(s) into a map. E.g.
                 // { "pkg_name": "path/to/pkg_name",
                 //   "pk2":      "path2/to/pk2"      }
@@ -491,32 +484,7 @@ class URDFViewer extends HTMLElement {
                 }, {});
             }
 
-            let robot = null;
             const manager = new THREE.LoadingManager();
-            manager.onLoad = () => {
-
-                // If another request has come in to load a new
-                // robot, then ignore this one
-                if (this._requestId !== requestId) {
-
-                    robot.traverse(c => c.dispose && c.dispose());
-                    return;
-
-                }
-
-                this.robot = robot;
-                this.world.add(robot);
-                updateMaterials(robot);
-
-                this._setIgnoreLimits(this.ignoreLimits);
-                this._updateCollisionVisibility();
-
-                this.dispatchEvent(new CustomEvent('urdf-processed', { bubbles: true, cancelable: true, composed: true }));
-                this.dispatchEvent(new CustomEvent('geometry-loaded', { bubbles: true, cancelable: true, composed: true }));
-
-                this.recenter();
-
-            };
 
             if (this.urlModifierFunc) {
 
@@ -524,12 +492,92 @@ class URDFViewer extends HTMLElement {
 
             }
 
-            const loader = new URDFLoader(manager);
+            let bodies = null;
+            const loader = new LISDFLoader(manager);
             loader.packages = pkg;
-            loader.loadMeshCb = this.loadMeshFunc;
-            loader.fetchOptions = { mode: 'cors', credentials: 'same-origin' };
-            loader.parseCollision = true;
-            loader.load(urdf, model => robot = model);
+            loader.load(lisdf, result => bodies = result);
+
+            const manager2 = new LoadingManager();
+            const loaderurdf = new URDFLoader(manager2);
+
+            const loaded = [];
+            manager.onLoad = () => {
+
+                if (requestId !== this._requestId) return;
+
+                for (const name in bodies) {
+                    if (typeof bodies[name][0] === 'string') {
+                        const [uri, scale, pose, positions] = bodies[name];
+                        // console.log('loading include', name, uri);
+                        loaderurdf.load(uri, result => {
+                            result.scale.set(scale, scale, scale);
+                            loaded.push([name, result, pose, positions]);
+                        });
+                    } else {
+                        const [size, pose, color] = bodies[name];
+                        // console.log('loading model', name, size);
+                        const geometry1 = new THREE.BoxGeometry(size[0], size[1], size[2]);
+                        const material1 = new MeshPhysicalMaterial({ color: color });
+                        const body = new THREE.Mesh(geometry1, material1);
+                        loaded.push([name, body, pose, null]);
+                    }
+
+                }
+            };
+
+            const models = new Map();
+            // wait until all the geometry has loaded to add the model to the scene
+            manager2.onLoad = () => {
+                // If another request has come in to load a new
+                // robot, then ignore this one
+                if (this._requestId !== requestId) {
+                    console.log('ignoring', requestId, this._requestId);
+                    for (const mm in models) {
+                        mm.traverse(c => c.dispose && c.dispose());
+                    }
+                    return;
+                }
+                loaded.forEach(record => {
+                    const [name, body, pose, positions] = record;
+                    console.log('setting', name, pose);
+                    setPose(body, pose);
+                    body.traverse(c => {
+                        c.castShadow = true;
+                    });
+                    if (positions) {
+
+                        for (const k in positions) {
+                            body.joints[k].setJointValue(positions[k]);
+                        }
+
+                    }
+                    this.scene.add(body);
+                    models.put(name, body);
+                });
+
+                this.models = models;
+                this.robot = models['pr20'];
+                this.world.add(this.robot);
+
+                // load animation json file
+                const jsonPath = 'https://zt-yang.github.io/lisdf-loaders/javascript/' + lisdf.replace('.lisdf', '.json').replace('../../../', '');
+                fetch(jsonPath)
+                    .then((response) => response.json())
+                    .then((json) => {
+                        this.animation = json;
+                        console.log('animation', json);
+                    });
+                this.startTime = Date.now() / 3e2;
+
+                this._setIgnoreLimits(this.ignoreLimits);
+                this._updateCollisionVisibility();
+
+                this.dispatchEvent(new CustomEvent('lisdf-processed', { bubbles: true, cancelable: true, composed: true }));
+                this.dispatchEvent(new CustomEvent('geometry-loaded', { bubbles: true, cancelable: true, composed: true }));
+
+                this.recenter();
+                console.log(this.scene);
+            };
 
         }
 
@@ -570,23 +618,6 @@ class URDFViewer extends HTMLElement {
             });
 
         });
-
-    }
-
-    // Watch the coordinate frame and update the
-    // rotation of the scene to match
-    _setUp(up) {
-
-        if (!up) up = '+Z';
-        up = up.toUpperCase();
-        const sign = up.replace(/[^-+]/g, '')[0] || '+';
-        const axis = up.replace(/[^XYZ]/gi, '')[0] || 'Z';
-
-        const PI = Math.PI;
-        const HALFPI = PI / 2;
-        if (axis === 'X') this.world.rotation.set(0, 0, sign === '+' ? HALFPI : -HALFPI);
-        if (axis === 'Z') this.world.rotation.set(sign === '+' ? -HALFPI : HALFPI, 0, 0);
-        if (axis === 'Y') this.world.rotation.set(sign === '+' ? 0 : PI, 0, 0);
 
     }
 
