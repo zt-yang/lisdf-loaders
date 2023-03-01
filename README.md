@@ -1,6 +1,6 @@
 # lisdf-loaders
 
-[Demo Here!](https://zt-yang.github.io/lisdf-loaders/javascript/example/bundle/simple.html)
+[Demo Here!](https://zt-yang.github.io/lisdf-loaders/javascript/example/bundle/index.html)
 
 ![Example simple.html](media/static.png)
 
@@ -35,10 +35,10 @@ Settings > Pages > Build and deployment > Source > select "Github Actions" > cre
 - [x] Load animation `.json` files
   - [x] Object rotation problem
 - [x] Embed static scenes into websites
+  - [x] Make object joints interactive
+  - [ ] Menu choose scenes and problems
 - [ ] Drag and drop `.lisdf` files
 - [ ] Drag and drop folder with `scene.lisdf` and `animation.json` files
-- [ ] Interactive scenes (joint positions)
-- [ ] Interactive scenes (menu choose scenes and problems)
 
 # LICENSE
 

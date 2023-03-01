@@ -5,7 +5,7 @@ import LISDFLoader from './LISDFLoader.js';
 import URDFLoader from './URDFLoader.js';
 // import 'babel-polyfill'; // for async/await
 import 'regenerator-runtime/runtime'; // for async/await
-import {setPose, processRobotPositions, processPose} from './LISDFUtils.js';
+import {setPose} from './LISDFUtils.js';
 
 const tempVec2 = new THREE.Vector2();
 const emptyRaycast = () => {};
@@ -91,6 +91,7 @@ class LISDFViewer extends HTMLElement {
         this._loadScheduled = false;
         this.robot = null;
         this.models = null;
+        this.id2Name = null;
         this.urlModifierFunc = null;
         this.animation = null;
         this.startTime = null;
@@ -312,17 +313,33 @@ class LISDFViewer extends HTMLElement {
 
     // Set the joint with jointName to
     // angle in degrees  // TODO: change multiple joints
-    setJointValue(jointName, ...values) {
+    setJointValue(joint, ...values) {
+        if (joint === undefined) return;
 
-        if (!this.robot) return;
-        if (!this.robot.joints) return;
-        if (!this.robot.joints[jointName]) return;
+        function findBodyName(child, id2Name) {
+            let curr = child;
+            while (curr) {
 
-        if (this.robot.joints[jointName].setJointValue(...values)) {
-            // console.log('setJointValue', jointName, values);
+                if (curr.uuid in id2Name) {
+
+                    return id2Name[curr.uuid];
+
+                }
+
+                curr = curr.parent;
+
+            }
+            return curr;
+        }
+
+        const bodyName = findBodyName(joint, this.id2Name);
+        console.log('setJointValue', bodyName, joint.name, values);
+        console.log(joint);
+        const detail = (bodyName, joint.name);
+
+        if (joint.setJointValue(...values)) {
             this.redraw();
-            this.dispatchEvent(new CustomEvent('angle-change', { bubbles: true, cancelable: true, detail: jointName }));
-
+            this.dispatchEvent(new CustomEvent('angle-change', { bubbles: true, cancelable: true, detail: detail }));
         }
 
     }
@@ -485,6 +502,7 @@ class LISDFViewer extends HTMLElement {
             };
 
             const models = {};
+            const id2Name = {};
             // wait until all the geometry has loaded to add the model to the scene
             manager2.onLoad = () => {
                 // If another request has come in to load a new
@@ -510,9 +528,11 @@ class LISDFViewer extends HTMLElement {
                     }
                     this.scene.add(body);
                     models[name] = body;
+                    id2Name[body.uuid] = name;
                 });
 
                 this.models = models;
+                this.id2Name = id2Name;
                 this.robot = models['pr20'];
                 this.world.add(this.robot);
                 this.startTime = Date.now() / 3e2;
@@ -526,35 +546,6 @@ class LISDFViewer extends HTMLElement {
                 this.dispatchEvent(new CustomEvent('geometry-loaded', { bubbles: true, cancelable: true, composed: true }));
 
                 this.recenter();
-
-                // const jsonPath = 'https://zt-yang.github.io/lisdf-loaders/' + lisdf.replace('.lisdf', '.json').replace('../../../', '');
-                // // Returns a Promise that resolves after "ms" Milliseconds
-                // const timer = ms => new Promise(res => setTimeout(res, ms));
-                // fetch(jsonPath)
-                //     .then((response) => response.json())
-                //     .then((json) => {
-                //         async function play(models, json) { // We need to wrap the loop into an async function for this to work
-                //             for (const frame in json) {
-                //                 const data = json[frame];
-                //                 for (const name in data) {
-                //                     const pose = data[name]['pose'];
-                //                     const positions = data[name]['joint_state'];
-                //                     if (name === 'pr20') {
-                //                         models[name].setJointValues(processRobotPositions(positions));
-                //                     } else {
-                //                         setPose(models[name], processPose(pose));
-                //                     }
-                //                     // console.log(name, pose, positions);
-                //                 }
-                //                 await timer(100); // then the created Promise can be awaited
-                //                 console.log();
-                //             }
-                //         }
-                //         this._setIgnoreLimits(true);
-                //         play(this.models, json);
-                //         this.animation = json;
-                //     });
-                // console.log('this.animation', this.animation);
             };
 
         }

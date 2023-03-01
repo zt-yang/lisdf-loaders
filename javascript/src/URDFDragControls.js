@@ -21,7 +21,6 @@ function findNearestJoint(child) {
         curr = curr.parent;
 
     }
-
     return curr;
 
 };

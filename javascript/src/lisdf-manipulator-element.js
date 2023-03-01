@@ -107,7 +107,7 @@ class LISDFManipulator extends LISDFViewer {
         };
         dragControls.updateJoint = (joint, angle) => {
 
-            this.setJointValue(joint.name, angle);
+            this.setJointValue(joint, angle);
 
         };
         dragControls.onHover = joint => {

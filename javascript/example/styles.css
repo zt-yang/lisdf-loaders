@@ -179,6 +179,18 @@ input:focus {
     overflow: hidden;
 }
 
+#autocenter-toggle {
+    display: none !important;
+}
+
+#collision-toggle {
+    display: none !important;
+}
+
+#do-animate {
+    display: none !important;
+}
+
 #controls > * {
     margin: 5px 0;
 }
@@ -188,7 +200,7 @@ input:focus {
     margin-bottom: 10px;
     text-align: right;
     transition: 0.1s opacity linear;
-    /*border-top: 1px solid white;*/ /* TODO: hide the panel for now */
+    border-top: 1px solid white;  /* TODO: hide the panel for now */
 }
 
 #controls #toggle-controls:hover {
@@ -205,7 +217,7 @@ input:focus {
 /* hidden state */
 #controls.hidden #toggle-controls:before {
     content: "show controls";
-    display: none; /* TODO: hide the panel for now */
+    /* display: none; TODO: hide the panel for now */
 }
 
 
@@ -224,7 +236,7 @@ input:focus {
 }
 
 #controls li {
-    font-size: 16px;
+    font-size: 12px;
     display: flex;
     align-items: center;
     padding: 1px 0;
@@ -241,11 +253,17 @@ input:focus {
 
 #controls li span {
 
-    padding: 0 5px;
-    max-width: 125px;
+    padding: 0 20px;
+    /*max-width: 125px;*/
     text-overflow: ellipsis;
     overflow: hidden;
 
+}
+
+#controls li .model-name {
+    font-size: 14px;
+    padding: 0 5px;
+    padding-top: 5px;
 }
 
 #controls li input[type="number"] {

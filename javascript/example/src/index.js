@@ -118,107 +118,134 @@ viewer.addEventListener('manipulate-end', e => {
 // create the sliders
 viewer.addEventListener('lisdf-processed', () => {
 
-    const r = viewer.robot;
-    Object
-        .keys(r.joints)
-        .sort((a, b) => {
+    // const r = viewer.robot;
+    for (const name in viewer.models) {
+        const r = viewer.models[name];
+        if (r.joints === undefined || r.joints.length === 0) continue;
 
-            const da = a.split(/[^\d]+/g).filter(v => !!v).pop();
-            const db = b.split(/[^\d]+/g).filter(v => !!v).pop();
-
-            if (da !== undefined && db !== undefined) {
-                const delta = parseFloat(da) - parseFloat(db);
-                if (delta !== 0) return delta;
-            }
-
-            if (a > b) return 1;
-            if (b > a) return -1;
-            return 0;
-
-        })
-        .map(key => r.joints[key])
-        .forEach(joint => {
-
-            const li = document.createElement('li');
-            li.innerHTML =
+        // add the name of the model
+        const lili = document.createElement('li');
+        lili.innerHTML =
             `
-            <span title="${ joint.name }">${ joint.name }</span>
-            <input type="range" value="0" step="0.0001"/>
-            <input type="number" step="0.0001" />
+            <span title="${name}" class="model-name">${name}</span>
             `;
-            li.setAttribute('joint-type', joint.jointType);
-            li.setAttribute('joint-name', joint.name);
+        sliderList.appendChild(lili);
+        var added = 0;
 
-            sliderList.appendChild(li);
+        // add each joint
+        Object
+            .keys(r.joints)
+            .sort((a, b) => {
 
-            // update the joint display
-            const slider = li.querySelector('input[type="range"]');
-            const input = li.querySelector('input[type="number"]');
-            li.update = () => {
-                const degMultiplier = radiansToggle.classList.contains('checked') ? 1.0 : RAD2DEG;
-                let angle = joint.angle;
+                const da = a.split(/[^\d]+/g).filter(v => !!v).pop();
+                const db = b.split(/[^\d]+/g).filter(v => !!v).pop();
 
-                if (joint.jointType === 'revolute' || joint.jointType === 'continuous') {
-                    angle *= degMultiplier;
+                if (da !== undefined && db !== undefined) {
+                    const delta = parseFloat(da) - parseFloat(db);
+                    if (delta !== 0) return delta;
                 }
 
-                if (Math.abs(angle) > 1) {
-                    angle = angle.toFixed(1);
-                } else {
-                    angle = angle.toPrecision(2);
+                if (a > b) return 1;
+                if (b > a) return -1;
+                return 0;
+
+            })
+            .map(key => r.joints[key])
+            .forEach(joint => {
+
+                const li = document.createElement('li');
+                li.innerHTML =
+                    `
+                    <span title="${joint.name}">${joint.name}</span>
+                    <input type="range" value="0" step="0.0001"/>
+                    <input type="number" step="0.0001" />
+                    `;
+                li.setAttribute('joint-type', joint.jointType);
+                li.setAttribute('joint-name', joint.name);
+
+                sliderList.appendChild(li);
+                added += 1;
+
+                // update the joint display
+                const slider = li.querySelector('input[type="range"]');
+                const input = li.querySelector('input[type="number"]');
+                li.update = () => {
+                    const degMultiplier = radiansToggle.classList.contains('checked') ? 1.0 : RAD2DEG;
+                    let angle = joint.angle;
+
+                    if (joint.jointType === 'revolute' || joint.jointType === 'continuous') {
+                        angle *= degMultiplier;
+                    }
+
+                    if (Math.abs(angle) > 1) {
+                        angle = angle.toFixed(1);
+                    } else {
+                        angle = angle.toPrecision(2);
+                    }
+
+                    input.value = parseFloat(angle);
+
+                    // directly input the value
+                    slider.value = joint.angle;
+
+                    if (viewer.ignoreLimits || joint.jointType === 'continuous') {
+                        slider.min = -6.28;
+                        slider.max = 6.28;
+
+                        input.min = -6.28 * degMultiplier;
+                        input.max = 6.28 * degMultiplier;
+                    } else {
+                        slider.min = joint.limit.lower;
+                        slider.max = joint.limit.upper;
+
+                        input.min = joint.limit.lower * degMultiplier;
+                        input.max = joint.limit.upper * degMultiplier;
+                    }
+                };
+
+                switch (joint.jointType) {
+
+                    case 'continuous':
+                    case 'prismatic':
+                    case 'revolute':
+                        break;
+                    default:
+                        li.update = () => {
+                        };
+                        input.remove();
+                        slider.remove();
+                        sliderList.removeChild(li);
+                        added -= 1;
+
                 }
 
-                input.value = parseFloat(angle);
+                slider.addEventListener('input', () => {
+                    viewer.setJointValue(joint, slider.value);
+                    li.update();
+                });
 
-                // directly input the value
-                slider.value = joint.angle;
+                input.addEventListener('change', () => {
+                    const degMultiplier = radiansToggle.classList.contains('checked') ? 1.0 : RAD2DEG;
+                    viewer.setJointValue(joint, input.value * degMultiplier);
+                    li.update();
+                });
 
-                if (viewer.ignoreLimits || joint.jointType === 'continuous') {
-                    slider.min = -6.28;
-                    slider.max = 6.28;
-
-                    input.min = -6.28 * degMultiplier;
-                    input.max = 6.28 * degMultiplier;
-                } else {
-                    slider.min = joint.limit.lower;
-                    slider.max = joint.limit.upper;
-
-                    input.min = joint.limit.lower * degMultiplier;
-                    input.max = joint.limit.upper * degMultiplier;
-                }
-            };
-
-            switch (joint.jointType) {
-
-                case 'continuous':
-                case 'prismatic':
-                case 'revolute':
-                    break;
-                default:
-                    li.update = () => {};
-                    input.remove();
-                    slider.remove();
-
-            }
-
-            slider.addEventListener('input', () => {
-                viewer.setJointValue(joint.name, slider.value);
                 li.update();
+
+                sliders[(name, joint.name)] = li;
+
             });
 
-            input.addEventListener('change', () => {
-                const degMultiplier = radiansToggle.classList.contains('checked') ? 1.0 : RAD2DEG;
-                viewer.setJointValue(joint.name, input.value * degMultiplier);
-                li.update();
-            });
-
-            li.update();
-
-            sliders[joint.name] = li;
-
-        });
-
+        if (added === 0) {
+            sliderList.removeChild(lili);
+        }
+    }
 });
+
+// animToggle.addEventListener('click', () => {
+//     animToggle.classList.toggle('checked');
+//     updateAnimation();
+// });
 
 document.addEventListener('WebComponentsReady', () => {
 
@@ -236,46 +263,15 @@ document.addEventListener('WebComponentsReady', () => {
 
 });
 
-// init 2D UI and animation
-const updateAngles = () => {
-
-    if (!viewer.setJointValue) return;
-
-    // // reset everything to 0 first
-    // const resetJointValues = viewer.angles;
-    // for (const name in resetJointValues) resetJointValues[name] = 0;
-    // viewer.setJointValues(resetJointValues);
-
-    // animate the legs
-    const time = Date.now() / 3e2;
-    for (let i = 1; i <= 6; i++) {
-
-        const offset = i * Math.PI / 3;
-        const ratio = Math.max(0, Math.sin(time + offset));
-
-        viewer.setJointValue(`HP${ i }`, THREE.MathUtils.lerp(30, 0, ratio) * DEG2RAD);
-        viewer.setJointValue(`KP${ i }`, THREE.MathUtils.lerp(90, 150, ratio) * DEG2RAD);
-        viewer.setJointValue(`AP${ i }`, THREE.MathUtils.lerp(-30, -60, ratio) * DEG2RAD);
-
-        viewer.setJointValue(`TC${ i }A`, THREE.MathUtils.lerp(0, 0.065, ratio));
-        viewer.setJointValue(`TC${ i }B`, THREE.MathUtils.lerp(0, 0.065, ratio));
-
-        viewer.setJointValue(`W${ i }`, window.performance.now() * 0.001);
-
-    }
-    console.log('updatedAngles', time);
-
-};
-
-const updateLoop = () => {
-
-    // if (animToggle.classList.contains('checked')) {
-    //     updateAngles();
-    // }
-
-    requestAnimationFrame(updateLoop);
-
-};
+// const updateLoop = () => {
+//
+//     if (animToggle.classList.contains('checked')) {
+//         updateAnimation();
+//     }
+//
+//     requestAnimationFrame(updateLoop);
+//
+// };
 
 const updateList = () => {
 
@@ -330,7 +326,7 @@ async function updateAnimation() {
         setTimeout(function() {
             requestAnimationFrame(loopKeyFrame);
             viewer.renderer.render(viewer.scene, viewer.camera);
-        }, 50);
+        }, 20);
     }
     loopKeyFrame();
 
@@ -344,7 +340,6 @@ document.addEventListener('WebComponentsReady', () => {
     viewer.addEventListener('manipulate-start', e => animToggle.classList.remove('checked'));
     viewer.addEventListener('lisdf-processed', e => updateAnimation());
     // updateLoop();
-    // updateAnimation();
     viewer.camera.position.set(-12, 6, 12);
     viewer.camera.lookAt(0, 0, 6);
 
